@@ -1,0 +1,58 @@
+name: Release
+description: Releases a new version of design system
+inputs:
+  token:
+    description: Github token
+    required: true
+  mode:
+    description: Release mode (major | minor | patch)
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout current branch
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    - name: Set registry
+      run: npm set registry https://npm.nos.to
+
+    - name: Get Tag
+      id: get-tag
+      env:
+        mode: ${{ inputs.mode }}
+      shell: bash
+      run: |
+        current_version="$(git fetch --all --tags && git tag --list --sort=-creatordate | head -n 1)"
+        echo "::debug::Current version is: $current_version"
+        new_version="npm --no-git-tag-version version ${{ env.mode }} | cut -c2-"
+        echo "::debug::New version is: $new_version"
+        echo "current_version=${current_version}" >> $GITHUB_OUTPUT
+        echo "new_version=${new_version}" >> $GITHUB_OUTPUT
+
+    - name: Create Tag
+      env:
+        tag: ${{ steps.get-tag.outputs.new-version }}
+      shell: bash
+      run: |
+        git tag -a $tag -m "Tag $tag for design system"
+        git push origin $tag
+
+    - name: Create Github Release
+      env:
+        tag: ${{ steps.get-tag.outputs.new_version }}
+        GH_TOKEN: ${{ inputs.token }}
+      shell: bash
+      run: |
+        gh release create "$tag" \
+        --repo "$GITHUB_REPOSITORY" \
+        --title "${GITHUB_REPOSITORY#*/} ${tag#v}" \
+        --generate-notes \
+        --verify-tag
