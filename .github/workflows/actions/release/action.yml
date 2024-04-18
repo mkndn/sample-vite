@@ -32,17 +32,7 @@ runs:
         current_version="$(git fetch --all --tags && git tag --list --sort=-creatordate | head -n 1)"
         echo "::debug::Current version is: $current_version"
         echo "current_version=${current_version}" >> $GITHUB_OUTPUT
-        echo "new_version=1.0.6" >> $GITHUB_OUTPUT
-
-    - name: Create Tag
-      id: create-tag
-      if: success() && steps.get-tag.outputs.new_version != ''
-      env:
-        tag: ${{ steps.get-tag.outputs.new_version }}
-      shell: bash
-      run: |
-        git tag -a $tag -m "Tag $tag for design system"
-        git push origin $tag
+        echo "new_version=1.1.1" >> $GITHUB_OUTPUT
 
     - name: Build Changelog
       id: changelog
@@ -53,28 +43,14 @@ runs:
         new_tag: ${{ steps.get-tag.outputs.new_version }}
       shell: bash
       run: |
-        cgl_content="$($workspace/build/release-docs.sh $old_tag $new_tag)"
-        echo "content<<EOF"$'\n'"$cgl_content"$'\n'EOF >> "$GITHUB_OUTPUT"
+        echo "::debug::old_tag $old_tag new_tag $new_tag"
+        mergePR="$(git log --oneline $old_tag..$new_tag | grep 'Merge pull request #' || echo '')"
+        mergeWithBump="$(git log --oneline $old_tag..$new_tag | grep -v Merge | grep -v 'Bump version' || echo '')"
+        cgl_content="
+          $new_tag
 
-    - name: Create Github Release
-      if: success() && steps.get-tag.outputs.new_version != ''
-      env:
-        changelog: ${{ steps.changelog.outputs.content }}
-        tag: ${{ steps.get-tag.outputs.new_version }}
-        GH_TOKEN: ${{ inputs.token }}
-      shell: bash
-      run: |
-        if [! -z "$changelog" ]
-        then
-          gh release create "$tag" \
-          --repo "$GITHUB_REPOSITORY" \
-          --title "${GITHUB_REPOSITORY#*/} ${tag#v}" \
-          --notes $changelog \
-          --verify-tag
-        else
-          gh release create "$tag" \
-          --repo "$GITHUB_REPOSITORY" \
-          --title "${GITHUB_REPOSITORY#*/} ${tag#v}" \
-          --generate-notes \
-          --verify-tag
-        fi
+          $mergePR
+
+          $mergeWithBump
+          "
+        echo "content<<EOF"$'\n'"$cgl_content"$'\n'EOF >> $GITHUB_OUTPUT
