@@ -18,13 +18,13 @@ on:
 jobs:
   release:
     name: Github release
-    if: github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v2
 
-      - name: Create github release
+      - name: Invoke github release
         id: github-release
         uses: ./.github/workflows/actions/release
         with:
