@@ -17,40 +17,25 @@ runs:
         fetch-depth: 0
         ref: ${{ github.head_ref || github.ref_name }}
 
-    - name: Config git globals
+    - name: Create tag and changelog
+      id: tag-changelog
       shell: bash
-      run: |
-        git config --global user.name "$(git log -n 1 --pretty=format:%an)"
-        git config --global user.email "$(git log -n 1 --pretty=format:%ae)"
-
-    - name: Get Tag
-      id: get-tag
+      working-directory: ${{ github.workspace }}/build
       env:
         mode: ${{ inputs.mode }}
-      shell: bash
-      run: |
-        current_version="$(git fetch --all --tags && git tag --list --sort=-creatordate | head -n 1)"
-        echo "::debug::Current version is: $current_version"
-        echo "current_version=${current_version}" >> $GITHUB_OUTPUT
-        echo "new_version=1.1.1" >> $GITHUB_OUTPUT
+      run: ./release.sh
 
-    - name: Build Changelog
-      id: changelog
-      if: success() && steps.get-tag.outputs.new_version != ''
+    - name: Create Github Release
+      if: success() && steps.tag-changelog.outputs.new_version != ''
       env:
-        workspace: ${{ github.workspace }}
-        old_tag: ${{ steps.get-tag.outputs.current_version }}
-        new_tag: ${{ steps.get-tag.outputs.new_version }}
+        changelog: ${{ steps.tag-changelog.outputs.content }}
+        tag: ${{ steps.tag-changelog.outputs.new_version }}
+        GH_TOKEN: ${{ inputs.token }}
       shell: bash
       run: |
-        echo "::debug::old_tag $old_tag new_tag $new_tag"
-        mergePR="$(git log --oneline $old_tag..$new_tag | grep 'Merge pull request #' || echo '')"
-        mergeWithBump="$(git log --oneline $old_tag..$new_tag | grep -v Merge | grep -v 'Bump version' || echo '')"
-        cgl_content="
-          $new_tag
-
-          $mergePR
-
-          $mergeWithBump
-          "
-        echo "content<<EOF"$'\n'"$cgl_content"$'\n'EOF >> $GITHUB_OUTPUT
+        if [ ! -z "$changelog" ]
+        then
+          echo "::debug::changelog available"
+        else
+          echo "::debug::changelog is NOT available"
+        fi
