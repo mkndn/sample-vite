@@ -21,7 +21,7 @@ then
   git tag -a $new_version -m "Tag $new_version for design system"
   echo "Pushing new tag"
 
-  git push origin --porcelain 1.1.2
+  git push origin $new_version
 
   echo "Pushed new tag to origin successfully"
 
