@@ -2,8 +2,8 @@
 
 # Setup git globals
 echo 'Config git globals'
-git config --global user.name "$(git log -n 1 --pretty=format:%an)"
-git config --global user.email "$(git log -n 1 --pretty=format:%ae)"
+git config --global user.name "mkndn"
+git config --global user.email "mkndn.rk@gmail.com"
 
 
 # Fetching current and new version
