@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        type: string
+        description: Release mode (major | minor | patch)
+        required: true
+    secrets:
+      token:
+        description: Github token
+        required: true
+
+jobs:
+  github-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v2
+        with:
+          path: ./
+
+      - name: Install GH CLI
+        uses: actions4gh/setup-gh@v1
+
+      - name: Create Github Release
+        if: success() && steps.tag-changelog.outputs.new_version != ''
+        env:
+          changelog: ${{ steps.tag-changelog.outputs.content }}
+          tag: ${{ steps.tag-changelog.outputs.new_version }}
+          GH_TOKEN: ${{ inputs.token }}
+        shell: bash
+        run: |
+          if [ ! -z "$changelog" ]
+          then
+            echo "::debug::changelog available"
+          else
+            echo "::debug::changelog is NOT available"
+          fi
+
+  npm-publish:
+    runs-on: ubuntu-latest
+    needs: github-release
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v2
+        with:
+          path: ./
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Set registry
+        run: npm set registry https://npm.nos.to
+
+      - name: Install dependencies
+        run: npm install
+
+      #- name: Build system
+      # run: npm run build:system
+
+      #- name: Publish to NPM
+      #  run: npm publish --registry https://npm.nos.to/ || true

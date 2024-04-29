@@ -21,8 +21,11 @@ then
   #git push origin $tag
 
   echo 'Getting changelog content'
-  cgl_content="$(./release-docs.sh $old_tag $new_tag)"
-  echo "content=$cgl_content" >> $GITHUB_OUTPUT
+  {
+    echo 'content<<EOF'
+    ./scripts/release-docs.sh "$current_version" "$new_version"
+    echo EOF
+  } >> "$GITHUB_OUTPUT"
   echo "new_version=${new_version}" >> $GITHUB_OUTPUT
 else
   echo "Skipping release as new version is invalid: $new_version"
