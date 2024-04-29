@@ -20,7 +20,7 @@ then
   echo 'Creating tag successful. Getting changelog content'
   {
     echo 'content<<EOF'
-    ./scripts/release-docs.sh "$current_version" "$new_version"
+    ./scripts/release-docs.sh "$current_version" "$current_version"
     echo EOF
   } >> "$GITHUB_OUTPUT"
   echo "new_version=${new_version}" >> $GITHUB_OUTPUT
