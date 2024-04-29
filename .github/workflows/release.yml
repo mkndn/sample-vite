@@ -29,7 +29,7 @@ jobs:
         with:
           gh-cli-version: 2.48.0
 
-      - name: Generate tag and changelog
+      - name: Create tag and changelog
         id: tag-changelog
         shell: bash
         working-directory: ${{ github.workspace }}/.github/workflows
@@ -37,16 +37,8 @@ jobs:
           mode: ${{ inputs.mode }}
         run: ./scripts/release.sh
 
-      - name: Create Github tag
-        id: tag-create
-        shell: bash
-        env:
-          new-version: ${{ steps.tag-changelog.outputs.new_version }}
-        run: |
-          git tag -a 1.1.2 -m "Tag 1.1.2 for design system"
-          git push origin 1.1.2
-
       - name: Create Github Release
+        if: success() && steps.tag-changelog.outputs.new_version != ''
         env:
           changelog: ${{ steps.tag-changelog.outputs.content }}
           tag: ${{ steps.tag-changelog.outputs.new_version }}

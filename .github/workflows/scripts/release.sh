@@ -17,13 +17,22 @@ echo "new_version=${new_version}"
 # Creating git tag
 if [ ! -z "$new_version" ]
 then
+  #echo 'Creating git tag'
+  git tag -a $new_version -m "Tag $new_version for design system"
+  echo "Pushing new tag"
+
+  git push origin --porcelain 1.1.2
+
+  echo "Pushed new tag to origin successfully"
+
   echo 'Creating tag successful. Getting changelog content'
   {
     echo 'content<<EOF'
-    ./scripts/release-docs.sh "$current_version" "$current_version"
+    ./scripts/release-docs.sh "$current_version" "$new_version"
     echo EOF
   } >> "$GITHUB_OUTPUT"
   echo "new_version=${new_version}" >> $GITHUB_OUTPUT
+
 else
   echo "Skipping release as new version is invalid: $new_version"
 fi
