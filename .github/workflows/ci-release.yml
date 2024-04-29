@@ -19,13 +19,11 @@ jobs:
   ci:
     name: Build, Test and Documentation
     if: github.event_name == 'push'
-    uses: "./.github/workflows/build.yml"
+    uses: "./.github/workflows/ci.yml"
 
   release:
     name: Github Release & Publish to NPM
     if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     uses: "./.github/workflows/release.yml"
-    secrets:
-      token: ${{ github.token }}
     with:
       mode: ${{ inputs.mode }}

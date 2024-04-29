@@ -7,10 +7,6 @@ on:
         type: string
         description: Release mode (major | minor | patch)
         required: true
-    secrets:
-      token:
-        description: Github token
-        required: true
 
 jobs:
   github-release:
@@ -21,22 +17,47 @@ jobs:
         with:
           path: ./
 
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
       - name: Install GH CLI
-        uses: actions4gh/setup-gh@v1
+        uses: dev-hanz-ops/install-gh-cli-action@v0.1.0
+        with:
+          gh-cli-version: 2.48.0
+
+      - name: Create tag and changelog
+        id: tag-changelog
+        shell: bash
+        working-directory: ${{ github.workspace }}/.github/workflows
+        env:
+          mode: ${{ inputs.mode }}
+        run: ./scripts/release.sh
 
       - name: Create Github Release
         if: success() && steps.tag-changelog.outputs.new_version != ''
         env:
           changelog: ${{ steps.tag-changelog.outputs.content }}
           tag: ${{ steps.tag-changelog.outputs.new_version }}
-          GH_TOKEN: ${{ inputs.token }}
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           if [ ! -z "$changelog" ]
           then
             echo "::debug::changelog available"
+            gh release create "$tag" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "${GITHUB_REPOSITORY#*/} ${tag#v}" \
+            --notes "$changelog" \
+            --verify-tag
           else
             echo "::debug::changelog is NOT available"
+            gh release create "$tag" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "${GITHUB_REPOSITORY#*/} ${tag#v}" \
+            --generate-notes \
+            --verify-tag
           fi
 
   npm-publish:

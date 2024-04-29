@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Setup git globals
 echo 'Config git globals'
@@ -10,6 +10,7 @@ git config --global user.email "$(git log -n 1 --pretty=format:%ae)"
 echo 'Fetching current and the next version'
 current_version="1.1.1"
 new_version="1.1.2"
+npm --version
 echo "current_version=${current_version}"
 echo "new_version=${new_version}"
 
@@ -17,16 +18,25 @@ echo "new_version=${new_version}"
 if [ ! -z "$new_version" ]
 then
   #echo 'Creating git tag'
-  #git tag -a $tag -m "Tag $tag for design system"
-  #git push origin $tag
+  git tag -a $new_version -m "Tag $new_version for design system"
+  echo "Pushing new tag"
 
-  echo 'Getting changelog content'
-  {
-    echo 'content<<EOF'
-    ./scripts/release-docs.sh "$current_version" "$new_version"
-    echo EOF
-  } >> "$GITHUB_OUTPUT"
-  echo "new_version=${new_version}" >> $GITHUB_OUTPUT
+  git push origin --porcelain 1.1.2
+
+  echo "Pushed new tag to origin successfully"
+
+  if [ "$tag_output" == *"[new tag]         $new_version -> $new_version"* ]
+  then
+    echo 'Creating tag successful. Getting changelog content'
+    {
+      echo 'content<<EOF'
+      ./scripts/release-docs.sh "$current_version" "$new_version"
+      echo EOF
+    } >> "$GITHUB_OUTPUT"
+    echo "new_version=${new_version}" >> $GITHUB_OUTPUT
+  else
+    echo "Pushing tag to origin failed"
+  fi
 else
   echo "Skipping release as new version is invalid: $new_version"
 fi
